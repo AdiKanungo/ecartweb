@@ -1,0 +1,296 @@
+<!-- Admin Dashboard for AK Industry -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AK Industry - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="admin-dashboard.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>AK Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-section="dashboard">
+                    <i class="fa-solid fa-chart-line"></i> Dashboard
+                </button>
+                <button class="nav-item" data-section="transactions">
+                    <i class="fa-solid fa-credit-card"></i> Transactions
+                </button>
+                <button class="nav-item" data-section="revenue">
+                    <i class="fa-solid fa-money-bill"></i> Revenue
+                </button>
+                <button class="nav-item" data-section="orders">
+                    <i class="fa-solid fa-box"></i> Orders
+                </button>
+                <button class="nav-item" data-section="users">
+                    <i class="fa-solid fa-users"></i> Users
+                </button>
+                <button class="nav-item" data-section="analytics">
+                    <i class="fa-solid fa-chart-pie"></i> Analytics
+                </button>
+                <button class="nav-item" data-section="refunds">
+                    <i class="fa-solid fa-undo"></i> Refunds
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="admin-header">
+                <h1>Admin Dashboard</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="exportData()">
+                        <i class="fa-solid fa-download"></i> Export
+                    </button>
+                    <button class="btn btn-secondary" onclick="printReport()">
+                        <i class="fa-solid fa-print"></i> Print
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <h2>Dashboard Overview</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon revenue">
+                            <i class="fa-solid fa-indian-rupee-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Revenue</h3>
+                            <p class="stat-value" id="total-revenue">₹0</p>
+                            <span class="stat-change">+12% from last month</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orders">
+                            <i class="fa-solid fa-shopping-bag"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Orders</h3>
+                            <p class="stat-value" id="total-orders">0</p>
+                            <span class="stat-change">+5 new today</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon users">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Users</h3>
+                            <p class="stat-value" id="total-users">0</p>
+                            <span class="stat-change">+2 new users</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon transactions">
+                            <i class="fa-solid fa-credit-card"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Transactions</h3>
+                            <p class="stat-value" id="total-transactions">0</p>
+                            <span class="stat-change">Success Rate: 98%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Revenue Trend</h3>
+                        <div id="revenue-chart" style="height: 250px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            Chart will render here
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Payment Methods</h3>
+                        <div id="payment-methods-chart" style="height: 250px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            Chart will render here
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions Section -->
+            <section id="transactions" class="content-section">
+                <h2>Payment Transactions</h2>
+                <div class="filters">
+                    <input type="date" id="filter-date" placeholder="Filter by date">
+                    <select id="filter-gateway">
+                        <option value="">All Gateways</option>
+                        <option value="Stripe">Stripe</option>
+                        <option value="Razorpay">Razorpay</option>
+                        <option value="Wallet">Wallet</option>
+                    </select>
+                    <select id="filter-status">
+                        <option value="">All Status</option>
+                        <option value="completed">Completed</option>
+                        <option value="pending">Pending</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Order ID</th>
+                            <th>Amount</th>
+                            <th>Gateway</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-tbody">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Revenue Section -->
+            <section id="revenue" class="content-section">
+                <h2>Revenue Analysis</h2>
+                <div class="revenue-cards">
+                    <div class="revenue-card">
+                        <h4>Total Revenue</h4>
+                        <p class="large-value" id="rev-total">₹0</p>
+                    </div>
+                    <div class="revenue-card">
+                        <h4>Platform Commission (10%)</h4>
+                        <p class="large-value" id="rev-commission">₹0</p>
+                    </div>
+                    <div class="revenue-card">
+                        <h4>Taxes (5%)</h4>
+                        <p class="large-value" id="rev-taxes">₹0</p>
+                    </div>
+                    <div class="revenue-card">
+                        <h4>Net Revenue</h4>
+                        <p class="large-value" id="rev-net">₹0</p>
+                    </div>
+                </div>
+                <div class="revenue-table">
+                    <h3>Revenue by Date</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Sales</th>
+                                <th>Transactions</th>
+                                <th>Avg Order Value</th>
+                                <th>Commission</th>
+                            </tr>
+                        </thead>
+                        <tbody id="revenue-tbody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Orders Section -->
+            <section id="orders" class="content-section">
+                <h2>Orders Management</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Items</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-tbody">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Users Section -->
+            <section id="users" class="content-section">
+                <h2>Users Management</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Wallet Balance</th>
+                            <th>Total Purchases</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="content-section">
+                <h2>Analytics & Insights</h2>
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3>Conversion Rate</h3>
+                        <p class="metric">0%</p>
+                        <small>Visitors → Purchases</small>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Average Order Value</h3>
+                        <p class="metric">₹0</p>
+                        <small>Per transaction</small>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Customer Satisfaction</h3>
+                        <p class="metric">4.5/5</p>
+                        <small>Based on ratings</small>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Return Rate</h3>
+                        <p class="metric">2%</p>
+                        <small>Product returns</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Refunds Section -->
+            <section id="refunds" class="content-section">
+                <h2>Refund Management</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Refund ID</th>
+                            <th>Order ID</th>
+                            <th>Amount</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Requested</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="refunds-tbody">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="payments.js"></script>
+    <script src="admin-dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AK Industry - Premium Handmade Products</title>
+    <meta name="description" content="Discover unique handmade products crafted by artisans. Premium quality, authentic, and ethically made.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="Style-premium.css" />
+    <!-- Stripe Script -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <!-- Razorpay Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="navbar">
+        <div class="nav-logo border">
+          <div class="logo"></div>
+        </div>
+        <div class="nav-address border">
+          <p class="add-first">Deliver to</p>
+          <div class="address-icon">
+            <i class="fa-solid fa-location-dot"></i>
+            <p class="add-second"><b>India</b></p>
+          </div>
+        </div>
+        <div class="nav-search">
+          <select class="search-select">
+            <option>All Categories</option>
+            <option>Handmade Jewelry</option>
+            <option>Home Decor</option>
+            <option>Fashion & Clothing</option>
+            <option>Crafts & Art</option>
+            <option>Personal Care</option>
+          </select>
+          <input class="search-input" placeholder="Search handmade products..." />
+          <div class="search-icon">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+        </div>
+        <div class="map-icon border">
+          <i class="fa-solid fa-earth-americas"></i>
+          <div>
+            <p>
+              <b><pre>EN</pre></b>
+            </p>
+            <div class="sort-down">
+              <i class="fa-solid fa-sort-down"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-singin border">
+          <p><span>Hello, sign in</span></p>
+          <p class="nav-second">Accounts & Lists</p>
+        </div>
+
+        <div class="nav-return border">
+          <p><span>Returns</span></p>
+          <p class="nav-second">& Orders</p>
+        </div>
+
+        <div class="nav-cart border">
+          <i class="fa-solid fa-cart-shopping"></i>
+          <span class="cart-count">0</span>
+          Cart
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-all">
+          <i class="fa-solid fa-bars"></i>
+          CATEGORIES
+        </div>
+        <div class="panel-options">
+          <p>✨ Exclusive Handmade</p>
+          <p>🎁 Gift Collections</p>
+          <p>🏆 Bestsellers</p>
+          <p>⭐ New Arrivals</p>
+          <p>👨‍🎨 Artisan Stories</p>
+        </div>
+        <div class="panel-deals">
+          <p>🎉 Special Offer: Free shipping on orders above ₹500</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="hero-section">
+      <div class="hero-msg premium-hero">
+        <div class="hero-badge">
+          <i class="fa-solid fa-sparkles"></i>
+          100% Authentic Handmade
+        </div>
+        <h1>Discover Unique Handcrafted Products</h1>
+        <p>
+          Support talented artisans. Every piece is unique, carefully crafted with passion and expertise.
+        </p>
+        <button class="hero-btn">Shop Now</button>
+      </div>
+    </div>
+
+    <div class="shop-section" id="shop-section">
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Handmade Jewelry</h2>
+          <div class="box-img" style="background-image: url('box1_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Home Decor</h2>
+          <div class="box-img" style="background-image: url('box2_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Textile & Fabric Art</h2>
+          <div class="box-img" style="background-image: url('box3_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Pottery & Ceramics</h2>
+          <div class="box-img" style="background-image: url('box4_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Personalized Gifts</h2>
+          <div class="box-img" style="background-image: url('box5_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Leather Crafts</h2>
+          <div class="box-img" style="background-image: url('box6_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Hand-Painted Art</h2>
+          <div class="box-img" style="background-image: url('box7_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Fashion & Apparel</h2>
+          <div class="box-img" style="background-image: url('box8_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Wooden Crafts</h2>
+          <div class="box-img" style="background-image: url('box9_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Metalwork & Sculpture</h2>
+          <div class="box-img" style="background-image: url('box10_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Natural Beauty Products</h2>
+          <div class="box-img" style="background-image: url('box11_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+
+      <div class="box category-box">
+        <div class="box-content">
+          <h2>Artisan Accessories</h2>
+          <div class="box-img" style="background-image: url('box12_image.jpg')"></div>
+          <p>Explore Collection →</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products Section -->
+    <div class="products-container">
+      <div class="products-header">
+        <h2>Featured Handmade Products</h2>
+        <p>Curated collection from talented artisans</p>
+      </div>
+      <div class="products-grid" id="products-grid">
+        <!-- Products will be loaded here by JavaScript -->
+      </div>
+    </div>
+
+    <footer>
+      <div class="foot-panel1">Back to Top</div>
+      <div class="foot-panel2">
+        <ul>
+          <p><strong>About Us</strong></p>
+          <a>About AK Industry</a>
+          <a>Our Artisans</a>
+          <a>Sustainability</a>
+          <a>Careers</a>
+          <a>Press</a>
+        </ul>
+        <ul>
+          <p><strong>Shop</strong></p>
+          <a>Shop by Category</a>
+          <a>New Arrivals</a>
+          <a>Bestsellers</a>
+          <a>Gift Guide</a>
+          <a>Collections</a>
+        </ul>
+        <ul>
+          <p><strong>Support</strong></p>
+          <a>Customer Service</a>
+          <a>Shipping Info</a>
+          <a>Returns & Exchange</a>
+          <a>FAQ</a>
+          <a>Contact Us</a>
+        </ul>
+        <ul>
+          <p><strong>Connect</strong></p>
+          <a>Follow on Instagram</a>
+          <a>Follow on Facebook</a>
+          <a>Newsletter</a>
+          <a>Blog</a>
+          <a>Affiliate Program</a>
+        </ul>
+      </div>
+      <div class="foot-panel3">
+        <div class="logo"></div>
+      </div>
+      <div class="foot-panel4">
+        <div class="pages">
+          <a>Conditions of Use</a>
+          <a>Privacy Notice</a>
+          <a>Accessibility</a>
+        </div>
+        <div class="copyright">
+          © 2024, AK Industry - Handmade & Authentic. All rights reserved.
+          <br />
+          <strong>Founder:</strong> ADI KANUNGO <br />
+          <strong>Email:</strong> adikanungo2006@gmail.com <br />
+          <strong>Mobile:</strong> +91 8917697087 <br>
+          <strong>Supporting Artisans Worldwide 🌍</strong>
+        </div>
+      </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="payments.js"></script>
+  </body>
+</html>
