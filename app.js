@@ -143,7 +143,6 @@ function showNotification(message, type = 'info') {
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
     
-    // Simple inline fallback styles for notifications
     notification.style.position = 'fixed';
     notification.style.bottom = '20px';
     notification.style.right = '20px';
@@ -196,19 +195,36 @@ function updateUIState() {
     }
 }
 
+// Render Products Grid with Images and side-by-side Add to Cart & Buy Now buttons
 function renderProductsGrid() {
     const productsGrid = document.getElementById('products-grid');
     if (!productsGrid) return;
 
     productsGrid.innerHTML = productDatabase.map(product => `
-        <div class="product-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 10px; background: #fff;" onclick="showProductDetailById(${product.id})">
+        <div class="product-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 10px; background: #fff; cursor: pointer;" onclick="showProductDetailById(${product.id})">
+            
+            <!-- ADDED BACK: Product Image Container -->
+            <div class="product-image" style="background-image: url('${product.image}'); height: 200px; background-size: cover; background-position: center; border-radius: 4px; margin-bottom: 10px;">
+            </div>
+
             <div class="product-info">
-                <p style="color: #7f8c8d; font-size: 0.8rem; text-transform: uppercase;">${product.category}</p>
+                <p style="color: #7f8c8d; font-size: 0.8rem; text-transform: uppercase; margin: 0;">${product.category}</p>
                 <h3 style="margin: 5px 0; font-size: 1.1rem; color: #2c3e50;">${product.name}</h3>
-                <p style="font-size: 0.9rem; color: #34495e;">₹${product.price.toLocaleString()}</p>
-                <button style="background: #f39c12; border: none; padding: 8px 12px; border-radius: 4px; color: #fff; cursor: pointer; margin-top: 10px;" onclick="event.stopPropagation(); addProductToCart(${product.id})">
-                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
-                </button>
+                <p style="font-size: 1rem; font-weight: bold; color: #2c3e50; margin: 5px 0;">₹${product.price.toLocaleString()}</p>
+                
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <!-- Add to Cart -->
+                    <button style="flex: 1; background: #f39c12; border: none; padding: 8px 10px; border-radius: 4px; color: #fff; cursor: pointer; font-weight: bold; font-size: 0.85rem;" 
+                            onclick="event.stopPropagation(); addProductToCart(${product.id})">
+                        <i class="fa-solid fa-cart-plus"></i> Add
+                    </button>
+                    
+                    <!-- Buy Now -->
+                    <button style="flex: 1; background: #e67e22; border: none; padding: 8px 10px; border-radius: 4px; color: #fff; cursor: pointer; font-weight: bold; font-size: 0.85rem;" 
+                            onclick="event.stopPropagation(); directBuyNow(${product.id})">
+                        <i class="fa-solid fa-bag-shopping"></i> Buy Now
+                    </button>
+                </div>
             </div>
         </div>
     `).join('');
@@ -221,6 +237,27 @@ function addProductToCart(id) {
     }
 }
 
+// Logic to process direct Buy Now checkout requests
+function directBuyNow(id) {
+    if (!auth.isLoggedIn()) {
+        showNotification('Please login to purchase items', 'warning');
+        openAuthModal();
+        return;
+    }
+
+    const product = productDatabase.find(p => p.id === id);
+    if (product) {
+        cart.addItem(product, 1);
+        showNotification('Proceeding to checkout...', 'success');
+        
+        if (typeof openCheckout === 'function') {
+            openCheckout();
+        } else {
+            openCart(); 
+        }
+    }
+}
+
 function showProductDetailById(id) {
     const product = productDatabase.find(p => p.id === id);
     if (product) {
@@ -229,25 +266,21 @@ function showProductDetailById(id) {
 }
 
 function setupEventListeners() {
-    // Search functionality
     const searchInput = document.querySelector('.search-input');
     if (searchInput) {
         searchInput.addEventListener('input', handleSearch);
     }
 
-    // Back to top
     const backToTopBtn = document.querySelector('.foot-panel1');
     if (backToTopBtn) {
         backToTopBtn.addEventListener('click', scrollToTop);
     }
 
-    // Cart click
     const cartBtn = document.querySelector('.nav-cart');
     if (cartBtn) {
         cartBtn.addEventListener('click', openCart);
     }
 
-    // CORRECTED: Bind both the tag class and the updated ID securely
     const signInBtn = document.getElementById('navSignIn') || document.querySelector('.nav-singin');
     if (signInBtn) {
         signInBtn.addEventListener('click', function() {
@@ -259,25 +292,21 @@ function setupEventListeners() {
         });
     }
 
-    // Hero Shop Now button
     const heroBtns = document.querySelectorAll('.hero-btn');
     heroBtns.forEach(btn => {
         btn.addEventListener('click', scrollToProducts);
     });
 
-    // Panel menu items
     const panelOptions = document.querySelectorAll('.panel-options p');
     panelOptions.forEach(option => {
         option.addEventListener('click', handlePanelMenuClick);
     });
 
-    // Category filters in nav
     const searchSelect = document.querySelector('.search-select');
     if (searchSelect) {
         searchSelect.addEventListener('change', filterByCategory);
     }
 
-    // Location selector
     const addressBtn = document.querySelector('.nav-address');
     if (addressBtn) {
         addressBtn.addEventListener('click', showLocationModal);
@@ -319,9 +348,8 @@ function filterBestsellers() { showNotification('Showing Best Sellers', 'success
 function filterNewArrivals() { showNotification('Showing New Arrivals', 'success'); }
 function filterGiftItems() { showNotification('Showing Gift Collections', 'success'); }
 
-// ===== MODAL UI UTILITY ENGINE (FIXED) =====
+// ===== MODAL UI UTILITY ENGINE =====
 function createModal(modalId) {
-    // Remove existing if any
     const existing = document.getElementById(modalId);
     if (existing) existing.remove();
 
@@ -379,12 +407,10 @@ function openAuthModal() {
     document.body.appendChild(modal);
     setupModalClose(modal);
 
-    // Dynamic field styling setup
     const nameGroup = modal.querySelector('#name-group');
     nameGroup.style.display = 'none'; 
     let isLoginMode = true;
 
-    // Toggle back and forth between Sign In and Registration forms
     modal.querySelector('#auth-switch-link').addEventListener('click', function(e) {
         e.preventDefault();
         isLoginMode = !isLoginMode;
@@ -395,7 +421,6 @@ function openAuthModal() {
         nameGroup.style.display = isLoginMode ? 'none' : 'block';
     });
 
-    // Handle Form Submit
     modal.querySelector('#auth-form').addEventListener('submit', function(e) {
         e.preventDefault();
         const email = modal.querySelector('#auth-email').value;
@@ -408,7 +433,7 @@ function openAuthModal() {
                 showNotification(`Welcome back, ${auth.currentUser.name}!`, 'success');
             } else {
                 auth.register(email, password, name);
-                auth.login(email, password); // Auto-login after signing up
+                auth.login(email, password); 
                 showNotification('Account registered successfully!', 'success');
             }
             updateUIState();
@@ -433,7 +458,7 @@ function openCart() {
             <h2 style="margin-bottom:20px; color:#2c3e50;">Shopping Cart</h2>
             <div id="cart-items-list">
                 ${cart.items.length === 0 ? '<p>Your cart is empty.</p>' : cart.items.map(item => `
-                    <div style="display:flex; justify-content:between; align-items:center; border-bottom:1px solid #eee; padding:10px 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:10px 0;">
                         <div style="flex-grow:1;">
                             <h4 style="margin:0;">${item.name}</h4>
                             <p style="margin:5px 0; color:#7f8c8d;">₹${item.price} x ${item.quantity}</p>
@@ -447,6 +472,43 @@ function openCart() {
     `;
     document.body.appendChild(modal);
     setupModalClose(modal);
+}
+
+function showProductDetail(product) {
+    const modal = createModal('product-detail-modal');
+    
+    modal.innerHTML = `
+        <div class="modal-content product-detail" style="background:#fff; padding:30px; border-radius:8px; width:500px; position:relative;">
+            <span class="close" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:24px;">&times;</span>
+            <div class="product-detail-container">
+                <div class="product-info">
+                    <h2>${product.name}</h2>
+                    <p class="category" style="color:#7f8c8d;">Category: <strong>${product.category}</strong></p>
+                    <p class="description" style="margin: 15px 0; line-height: 1.5;">${product.description}</p>
+                    <div class="price-section" style="margin-bottom: 20px;">
+                        <span class="price" style="font-size: 1.4rem; font-weight: bold; color: #2c3e50;">₹${product.price.toLocaleString()}</span>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn add-to-cart-btn" style="flex:1; background:#f39c12; color:#fff; border:none; padding:12px; border-radius:4px; font-weight:bold; cursor:pointer;">Add to Cart</button>
+                        <button class="btn buy-now-btn" style="flex:1; background:#e67e22; color:#fff; border:none; padding:12px; border-radius:4px; font-weight:bold; cursor:pointer;">Buy Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    setupModalClose(modal);
+
+    modal.querySelector('.add-to-cart-btn').addEventListener('click', () => {
+        cart.addItem(product, 1);
+        modal.remove();
+    });
+
+    modal.querySelector('.buy-now-btn').addEventListener('click', () => {
+        modal.remove();
+        directBuyNow(product.id);
+    });
 }
 
 function showArtisanStories() { showNotification('Loading Artisan Stories...', 'info'); }
