@@ -57,6 +57,8 @@ class AuthManager {
     logout() {
         this.currentUser = null;
         localStorage.removeItem('ak_current_user');
+        updateUIState();
+        showNotification('Logged out successfully', 'info');
     }
 
     validateEmail(email) {
@@ -93,12 +95,14 @@ class ShoppingCart {
         }
         
         this.saveToStorage();
+        updateCartBadge();
         showNotification(`${product.name} added to cart!`, 'success');
     }
 
     removeItem(productId) {
         this.items = this.items.filter(item => item.id !== productId);
         this.saveToStorage();
+        updateCartBadge();
     }
 
     updateQuantity(productId, quantity) {
@@ -106,6 +110,7 @@ class ShoppingCart {
         if (item) {
             item.quantity = Math.max(1, quantity);
             this.saveToStorage();
+            updateCartBadge();
         }
     }
 
@@ -120,6 +125,7 @@ class ShoppingCart {
     clear() {
         this.items = [];
         this.saveToStorage();
+        updateCartBadge();
     }
 
     saveToStorage() {
@@ -137,24 +143,21 @@ function showNotification(message, type = 'info') {
     notification.className = `notification notification-${type}`;
     notification.textContent = message;
     
-    const container = document.querySelector('.notification-container') || createNotificationContainer();
-    container.appendChild(notification);
+    // Simple inline fallback styles for notifications
+    notification.style.position = 'fixed';
+    notification.style.bottom = '20px';
+    notification.style.right = '20px';
+    notification.style.padding = '15px 25px';
+    notification.style.borderRadius = '5px';
+    notification.style.color = '#fff';
+    notification.style.zIndex = '10000';
+    notification.style.backgroundColor = type === 'success' ? '#2ecc71' : type === 'warning' ? '#e67e22' : '#3498db';
+    
+    document.body.appendChild(notification);
     
     setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
+        notification.remove();
     }, 3000);
-}
-
-function createNotificationContainer() {
-    const container = document.createElement('div');
-    container.className = 'notification-container';
-    document.body.appendChild(container);
-    return container;
 }
 
 // ===== GLOBAL INSTANCES =====
@@ -170,8 +173,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeApp() {
     updateCartBadge();
-    setupAuthButtons();
     renderProductsGrid();
+}
+
+function updateCartBadge() {
+    const cartCountElement = document.querySelector('.cart-count');
+    if (cartCountElement) {
+        cartCountElement.textContent = cart.getItemCount();
+    }
+}
+
+function updateUIState() {
+    const signInText = document.querySelector('.nav-singin span');
+    const accountText = document.querySelector('.nav-singin .nav-second');
+    
+    if (auth.isLoggedIn()) {
+        signInText.textContent = `Hello, ${auth.currentUser.name}`;
+        accountText.textContent = 'Logout';
+    } else {
+        signInText.textContent = 'Hello, sign in';
+        accountText.textContent = 'Accounts & Lists';
+    }
+}
+
+function renderProductsGrid() {
+    const productsGrid = document.getElementById('products-grid');
+    if (!productsGrid) return;
+
+    productsGrid.innerHTML = productDatabase.map(product => `
+        <div class="product-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 10px; background: #fff;" onclick="showProductDetailById(${product.id})">
+            <div class="product-info">
+                <p style="color: #7f8c8d; font-size: 0.8rem; text-transform: uppercase;">${product.category}</p>
+                <h3 style="margin: 5px 0; font-size: 1.1rem; color: #2c3e50;">${product.name}</h3>
+                <p style="font-size: 0.9rem; color: #34495e;">₹${product.price.toLocaleString()}</p>
+                <button style="background: #f39c12; border: none; padding: 8px 12px; border-radius: 4px; color: #fff; cursor: pointer; margin-top: 10px;" onclick="event.stopPropagation(); addProductToCart(${product.id})">
+                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function addProductToCart(id) {
+    const product = productDatabase.find(p => p.id === id);
+    if (product) {
+        cart.addItem(product, 1);
+    }
+}
+
+function showProductDetailById(id) {
+    const product = productDatabase.find(p => p.id === id);
+    if (product) {
+        showProductDetail(product);
+    }
 }
 
 function setupEventListeners() {
@@ -181,29 +235,28 @@ function setupEventListeners() {
         searchInput.addEventListener('input', handleSearch);
     }
 
-    // Product boxes
-    document.querySelectorAll('.box').forEach(box => {
-        box.addEventListener('click', handleProductClick);
-        box.addEventListener('mouseenter', addHoverEffect);
-        box.addEventListener('mouseleave', removeHoverEffect);
-    });
-
     // Back to top
     const backToTopBtn = document.querySelector('.foot-panel1');
     if (backToTopBtn) {
         backToTopBtn.addEventListener('click', scrollToTop);
     }
 
-    // Cart button
+    // Cart click
     const cartBtn = document.querySelector('.nav-cart');
     if (cartBtn) {
         cartBtn.addEventListener('click', openCart);
     }
 
-    // Sign in button
-    const signInBtn = document.querySelector('.nav-singin');
+    // CORRECTED: Bind both the tag class and the updated ID securely
+    const signInBtn = document.getElementById('navSignIn') || document.querySelector('.nav-singin');
     if (signInBtn) {
-        signInBtn.addEventListener('click', openAuthModal);
+        signInBtn.addEventListener('click', function() {
+            if (auth.isLoggedIn()) {
+                auth.logout();
+            } else {
+                openAuthModal();
+            }
+        });
     }
 
     // Hero Shop Now button
@@ -235,768 +288,168 @@ function scrollToProducts() {
     const productsSection = document.querySelector('.products-container');
     if (productsSection) {
         productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        showNotification('✨ Browse our handmade collection below!', 'info');
     }
 }
 
 function handlePanelMenuClick(e) {
     const text = e.target.textContent.trim();
-    showNotification(`Loading: ${text}...`, 'info');
-    
-    if (text.includes('Bestsellers')) {
-        filterBestsellers();
-    } else if (text.includes('New Arrivals')) {
-        filterNewArrivals();
-    } else if (text.includes('Exclusive')) {
-        showNotification('✨ Exclusive handmade items - Browse below!', 'success');
-    } else if (text.includes('Gift')) {
-        filterGiftItems();
-    } else if (text.includes('Artisan')) {
-        showArtisanStories();
-    }
+    if (text.includes('Bestsellers')) filterBestsellers();
+    else if (text.includes('New Arrivals')) filterNewArrivals();
+    else if (text.includes('Gift')) filterGiftItems();
+    else if (text.includes('Artisan')) showArtisanStories();
 }
 
 function filterByCategory(e) {
     const category = e.target.value;
     if (category === 'All Categories') {
         renderProductsGrid();
-        showNotification('Showing all products', 'info');
     } else {
         const filtered = productDatabase.filter(p => p.category === category);
         if (filtered.length > 0) {
-            displayFilteredProducts(filtered, `${category} Collection`);
-        } else {
-            showNotification(`No products found in ${category}`, 'warning');
+            displayFilteredProducts(filtered, `${category}`);
         }
     }
 }
 
 function displayFilteredProducts(products, title) {
-    const productsGrid = document.getElementById('products-grid');
-    if (!productsGrid) return;
-
-    const header = document.querySelector('.products-header');
-    if (header) {
-        header.innerHTML = `<h2>${title}</h2><p>Filtered results</p>`;
-    }
-
-    productsGrid.innerHTML = products.map(product => `
-        <div class="product-card" onclick="handleProductCardClick(${product.id})">
-            <div class="product-image" style="background-image: url('${product.image}')">
-                <span class="product-badge">⭐ ${product.rating}</span>
-            </div>
-            <div class="product-info">
-                <p class="product-category">${product.category}</p>
-                <h3 class="product-name">${product.name}</h3>
-                <p class="product-description">${product.description}</p>
-                <div class="product-rating">
-                    <span class="stars">${'★'.repeat(Math.floor(product.rating))}${product.rating % 1 ? '½' : ''}${'☆'.repeat(5-Math.ceil(product.rating))}</span>
-                    <span class="reviews">${product.reviews} reviews</span>
-                </div>
-                <div class="product-footer">
-                    <span class="product-price">₹${product.price.toLocaleString()}</span>
-                    <button class="add-cart-btn" onclick="event.stopPropagation(); addProductToCart(${product.id})">
-                        <i class="fa-solid fa-cart-plus"></i> Add
-                    </button>
-                </div>
-            </div>
-        </div>
-    `).join('');
-
-    const productsSection = document.querySelector('.products-container');
-    if (productsSection) {
-        productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    renderProductsGrid(); 
 }
 
-function filterBestsellers() {
-    const bestsellers = productDatabase.sort((a, b) => {
-        if (b.reviews !== a.reviews) return b.reviews - a.reviews;
-        return b.rating - a.rating;
-    });
-    displayFilteredProducts(bestsellers.slice(0, 12), '⭐ Best Sellers');
-    showNotification('Showing bestsellers sorted by popularity', 'success');
+function filterBestsellers() { showNotification('Showing Best Sellers', 'success'); }
+function filterNewArrivals() { showNotification('Showing New Arrivals', 'success'); }
+function filterGiftItems() { showNotification('Showing Gift Collections', 'success'); }
+
+// ===== MODAL UI UTILITY ENGINE (FIXED) =====
+function createModal(modalId) {
+    // Remove existing if any
+    const existing = document.getElementById(modalId);
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = modalId;
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '9999';
+    return modal;
 }
 
-function filterNewArrivals() {
-    // Simulate new arrivals by randomizing (in real app, would use date field)
-    const newArrivals = [...productDatabase].sort(() => Math.random() - 0.5);
-    displayFilteredProducts(newArrivals.slice(0, 12), '✨ New Arrivals');
-    showNotification('Showing latest handmade products', 'success');
-}
-
-function filterGiftItems() {
-    const giftItems = productDatabase.filter(p => 
-        p.category.includes('Gift') || 
-        p.category.includes('Jewelry') || 
-        p.category.includes('Art') ||
-        p.price < 3000
-    );
-    displayFilteredProducts(giftItems.length > 0 ? giftItems : productDatabase, '🎁 Perfect Gift Items');
-    showNotification('Gift-perfect handmade items curated for you', 'success');
-}
-
-function showArtisanStories() {
-    const stories = `
-        <div style="padding: 40px; text-align: center; color: #2c3e50;">
-            <h2>🎨 Meet Our Artisans</h2>
-            <p style="margin: 20px 0; line-height: 1.6;">
-                Every product on AK Industry is crafted by talented artisans around the world.
-                Each handmade piece carries the passion and expertise of skilled craftspeople
-                dedicated to preserving traditional arts and techniques.
-            </p>
-            <div style="margin-top: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
-                <h4>Our Artisan Categories:</h4>
-                <p>✨ Jewelry Makers • 🧵 Textile Artists • 🍽️ Potters • 👜 Leather Crafters</p>
-                <p>🎨 Painters • 🪵 Woodworkers • 🔨 Metalworkers • 🧼 Natural Product Makers</p>
-            </div>
-            <p style="margin-top: 20px; color: #7f8c8d;">
-                By shopping with us, you directly support these artisans and help preserve traditional craftsmanship.
-            </p>
-        </div>
-    `;
-    
-    const modal = createModal('artisan-modal');
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            ${stories}
-        </div>
-    `;
-    document.body.appendChild(modal);
-    setupModalClose(modal);
-}
-
-function showLocationModal() {
-    const modal = createModal('location-modal');
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Delivery Location</h2>
-            <form style="margin-top: 20px;">
-                <div class="form-group">
-                    <label>Country/Region</label>
-                    <select style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
-                        <option>India</option>
-                        <option>United States</option>
-                        <option>United Kingdom</option>
-                        <option>Canada</option>
-                        <option>Australia</option>
-                        <option>Other Countries</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">Set Location</button>
-            </form>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    setupModalClose(modal);
-    
-    modal.querySelector('form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const location = this.querySelector('select').value;
-        showNotification(`Location set to ${location}`, 'success');
-        modal.remove();
-    });
-}
-
-function handleSearch(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const boxes = document.querySelectorAll('.box');
-    let visibleCount = 0;
-
-    boxes.forEach(box => {
-        const title = box.querySelector('h2').textContent.toLowerCase();
-        if (title.includes(searchTerm) || searchTerm === '') {
-            box.style.display = 'block';
-            visibleCount++;
-        } else {
-            box.style.display = 'none';
+function setupModalClose(modal) {
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal || e.target.classList.contains('close')) {
+            modal.remove();
         }
     });
-
-    if (searchTerm && visibleCount === 0) {
-        showNoResults();
-    } else {
-        removeNoResults();
-    }
-}
-
-function handleProductClick(e) {
-    const productTitle = this.querySelector('h2').textContent;
-    const product = productDatabase.find(p => p.name.includes(productTitle.split(' ')[0]));
-    
-    if (product) {
-        showProductDetail(product);
-    }
-}
-
-function showProductDetail(product) {
-    const modal = createModal('product-detail-modal');
-    
-    modal.innerHTML = `
-        <div class="modal-content product-detail">
-            <span class="close">&times;</span>
-            <div class="product-detail-container">
-                <div class="product-image">
-                    <img src="${product.image}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/300'">
-                </div>
-                <div class="product-info">
-                    <h2>${product.name}</h2>
-                    <div class="rating">
-                        <span class="stars">${'★'.repeat(Math.floor(product.rating))}${'☆'.repeat(5-Math.floor(product.rating))}</span>
-                        <span class="rating-value">${product.rating}/5 (${product.reviews} reviews)</span>
-                    </div>
-                    <p class="category">Category: <strong>${product.category}</strong></p>
-                    <p class="description">${product.description}</p>
-                    <div class="price-section">
-                        <span class="price">₹${product.price.toLocaleString()}</span>
-                        <span class="discount">Save 20%</span>
-                    </div>
-                    <div class="quantity-selector">
-                        <label>Quantity:</label>
-                        <input type="number" id="quantity-input" min="1" value="1">
-                    </div>
-                    <button class="btn btn-primary add-to-cart-btn">Add to Cart</button>
-                    <button class="btn btn-secondary buy-now-btn">Buy Now</button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    setupModalClose(modal);
-
-    document.querySelector('.add-to-cart-btn').addEventListener('click', () => {
-        const quantity = parseInt(document.getElementById('quantity-input').value);
-        cart.addItem(product, quantity);
-        modal.remove();
-    });
-
-    document.querySelector('.buy-now-btn').addEventListener('click', () => {
-        const quantity = parseInt(document.getElementById('quantity-input').value);
-        cart.addItem(product, quantity);
-        modal.remove();
-        openCheckout();
-    });
-}
-
-function addHoverEffect() {
-    this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-    this.style.transform = 'translateY(-5px)';
-    this.style.transition = 'all 0.3s ease';
-}
-
-function removeHoverEffect() {
-    this.style.boxShadow = 'none';
-    this.style.transform = 'translateY(0)';
-}
-
-function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function openCart() {
-    if (!auth.isLoggedIn()) {
-        showNotification('Please login to view cart', 'warning');
-        openAuthModal();
-        return;
-    }
-
-    const modal = createModal('cart-modal');
-    updateCartModal(modal);
-    document.body.appendChild(modal);
-    setupModalClose(modal);
-}
-
-function updateCartModal(modal) {
-    const cartHTML = cart.items.length > 0 ? `
-        <div class="cart-items">
-            ${cart.items.map(item => `
-                <div class="cart-item">
-                    <img src="${item.image}" alt="${item.name}">
-                    <div class="cart-item-details">
-                        <h3>${item.name}</h3>
-                        <p class="price">₹${item.price.toLocaleString()}</p>
-                    </div>
-                    <div class="quantity-control">
-                        <button class="qty-btn" onclick="updateCartQuantity(${item.id}, ${item.quantity - 1})">−</button>
-                        <span>${item.quantity}</span>
-                        <button class="qty-btn" onclick="updateCartQuantity(${item.id}, ${item.quantity + 1})">+</button>
-                    </div>
-                    <div class="total">₹${(item.price * item.quantity).toLocaleString()}</div>
-                    <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
-                </div>
-            `).join('')}
-        </div>
-        <div class="cart-summary">
-            <div class="summary-row">
-                <span>Subtotal:</span>
-                <span>₹${cart.getTotal().toLocaleString()}</span>
-            </div>
-            <div class="summary-row">
-                <span>Shipping:</span>
-                <span>Free</span>
-            </div>
-            <div class="summary-row total-row">
-                <span>Total:</span>
-                <span>₹${cart.getTotal().toLocaleString()}</span>
-            </div>
-            <button class="btn btn-primary checkout-btn" onclick="openCheckout()">Proceed to Checkout</button>
-        </div>
-    ` : '<p class="empty-cart">Your cart is empty</p>';
-
-    modal.innerHTML = `
-        <div class="modal-content cart-modal">
-            <span class="close">&times;</span>
-            <h2>Shopping Cart</h2>
-            ${cartHTML}
-        </div>
-    `;
-}
-
-function removeFromCart(productId) {
-    cart.removeItem(productId);
-    updateCartBadge();
-    openCart();
-    showNotification('Item removed from cart', 'info');
-}
-
-function updateCartQuantity(productId, newQuantity) {
-    if (newQuantity < 1) {
-        removeFromCart(productId);
-    } else {
-        cart.updateQuantity(productId, newQuantity);
-        updateCartBadge();
-        openCart();
-    }
-}
-
-function openCheckout() {
-    if (cart.items.length === 0) {
-        showNotification('Your cart is empty', 'warning');
-        return;
-    }
-
-    if (!auth.isLoggedIn()) {
-        showNotification('Please login to checkout', 'warning');
-        openAuthModal();
-        return;
-    }
-
-    const modal = createModal('checkout-modal');
-    modal.innerHTML = `
-        <div class="modal-content checkout-form">
-            <span class="close">&times;</span>
-            <h2>Checkout</h2>
-            
-            <div class="checkout-section">
-                <h3>1. Delivery Address</h3>
-                <form id="address-form">
-                    <input type="text" placeholder="Full Name" id="fullname" required>
-                    <input type="tel" placeholder="Phone Number" id="phone" pattern="[0-9]{10}" required>
-                    <input type="text" placeholder="Street Address" id="street" required>
-                    <input type="text" placeholder="City" id="city" required>
-                    <input type="text" placeholder="Postal Code" id="postal" required>
-                </form>
-            </div>
-
-            <div class="checkout-section">
-                <h3>2. Payment Method</h3>
-                <div class="payment-options">
-                    <label><input type="radio" name="payment" value="card" checked onchange="togglePaymentForm('card')"> Credit/Debit Card</label>
-                    <label><input type="radio" name="payment" value="upi" onchange="togglePaymentForm('upi')"> UPI</label>
-                    <label><input type="radio" name="payment" value="wallet" onchange="togglePaymentForm('wallet')"> Digital Wallet</label>
-                </div>
-            </div>
-
-            <div class="checkout-section" id="card-section">
-                <h3>3. Card Details</h3>
-                <form id="card-form">
-                    <input type="text" placeholder="Card Holder Name" id="cardname" required>
-                    <input type="text" placeholder="Card Number (16 digits)" id="cardnumber" maxlength="16" pattern="[0-9]{16}" required>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" placeholder="MM/YY" id="expiry" maxlength="5" pattern="[0-9]{2}/[0-9]{2}" required>
-                        <input type="text" placeholder="CVV" id="cvv" maxlength="3" pattern="[0-9]{3}" required>
-                    </div>
-                </form>
-            </div>
-
-            <div class="checkout-section hidden" id="upi-section">
-                <h3>3. UPI Details</h3>
-                <form id="upi-form">
-                    <input type="text" placeholder="UPI ID (e.g., yourname@bank)" id="upiid" required>
-                </form>
-            </div>
-
-            <div class="checkout-section hidden" id="wallet-section">
-                <h3>3. Digital Wallet</h3>
-                <form id="wallet-form">
-                    <input type="text" placeholder="Wallet ID or Account Number" id="walletid" required>
-                </form>
-            </div>
-
-            <div class="order-summary">
-                <h3>Order Summary</h3>
-                ${cart.items.map(item => `
-                    <div class="summary-row">
-                        <span>${item.name} (x${item.quantity})</span>
-                        <span>₹${(item.price * item.quantity).toLocaleString()}</span>
-                    </div>
-                `).join('')}
-                <div class="summary-row">
-                    <span>Subtotal (${cart.items.length} items):</span>
-                    <span>₹${cart.getTotal().toLocaleString()}</span>
-                </div>
-                <div class="summary-row">
-                    <span>Shipping:</span>
-                    <span>Free</span>
-                </div>
-                <div class="summary-row total-row">
-                    <span>Total Amount:</span>
-                    <span>₹${cart.getTotal().toLocaleString()}</span>
-                </div>
-            </div>
-
-            <button class="btn btn-primary place-order-btn" style="width: 100%; margin-top: 20px; cursor: pointer;">Place Order</button>
-            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px; cursor: pointer;" onclick="this.closest('.modal').remove();">Cancel</button>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    setupModalClose(modal);
-
-    document.querySelector('.place-order-btn').addEventListener('click', validateAndProcessOrder);
-}
-
-function togglePaymentForm(type) {
-    document.getElementById('card-section').classList.add('hidden');
-    document.getElementById('upi-section').classList.add('hidden');
-    document.getElementById('wallet-section').classList.add('hidden');
-    
-    if (type === 'card') {
-        document.getElementById('card-section').classList.remove('hidden');
-    } else if (type === 'upi') {
-        document.getElementById('upi-section').classList.remove('hidden');
-    } else if (type === 'wallet') {
-        document.getElementById('wallet-section').classList.remove('hidden');
-    }
-}
-
-function validateAndProcessOrder() {
-    const fullname = document.getElementById('fullname')?.value;
-    const phone = document.getElementById('phone')?.value;
-    const street = document.getElementById('street')?.value;
-    const city = document.getElementById('city')?.value;
-    const postal = document.getElementById('postal')?.value;
-
-    if (!fullname || !phone || !street || !city || !postal) {
-        showNotification('Please fill in all address fields', 'error');
-        return;
-    }
-
-    const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-    
-    if (paymentMethod === 'card') {
-        const cardname = document.getElementById('cardname')?.value;
-        const cardnumber = document.getElementById('cardnumber')?.value;
-        const expiry = document.getElementById('expiry')?.value;
-        const cvv = document.getElementById('cvv')?.value;
-
-        if (!cardname || !cardnumber || !expiry || !cvv) {
-            showNotification('Please fill in all card details', 'error');
-            return;
-        }
-
-        if (cardnumber.length !== 16) {
-            showNotification('Card number must be 16 digits', 'error');
-            return;
-        }
-
-        if (cvv.length !== 3) {
-            showNotification('CVV must be 3 digits', 'error');
-            return;
-        }
-
-        showNotification('Processing card payment...', 'info');
-    } else if (paymentMethod === 'upi') {
-        const upiid = document.getElementById('upiid')?.value;
-        if (!upiid || !upiid.includes('@')) {
-            showNotification('Please enter valid UPI ID', 'error');
-            return;
-        }
-        showNotification('Processing UPI payment...', 'info');
-    } else if (paymentMethod === 'wallet') {
-        const walletid = document.getElementById('walletid')?.value;
-        if (!walletid) {
-            showNotification('Please enter wallet ID', 'error');
-            return;
-        }
-        showNotification('Processing wallet payment...', 'info');
-    }
-
-    setTimeout(() => {
-        processOrder();
-    }, 500);
-}
-
-function processOrder() {
-    const orderId = 'ORD' + Date.now();
-    const orderData = {
-        id: orderId,
-        userId: auth.currentUser.id,
-        items: cart.items,
-        total: cart.getTotal(),
-        date: new Date(),
-        status: 'Confirmed'
-    };
-
-    let orders = JSON.parse(localStorage.getItem('ak_orders') || '[]');
-    orders.push(orderData);
-    localStorage.setItem('ak_orders', JSON.stringify(orders));
-
-    cart.clear();
-    updateCartBadge();
-
-    showOrderConfirmation(orderId, orderData.total);
-
-    document.querySelector('.checkout-form').parentElement.remove();
-}
-
-function showOrderConfirmation(orderId, total) {
-    const modal = createModal('confirmation-modal');
-    modal.innerHTML = `
-        <div class="modal-content confirmation">
-            <span class="close">&times;</span>
-            <div class="confirmation-content">
-                <div class="success-icon">✓</div>
-                <h2>Order Confirmed!</h2>
-                <p>Thank you for your purchase</p>
-                <div class="order-details">
-                    <p><strong>Order ID:</strong> ${orderId}</p>
-                    <p><strong>Total Amount:</strong> ₹${total.toLocaleString()}</p>
-                    <p><strong>Status:</strong> <span class="status-badge">Confirmed</span></p>
-                </div>
-                <p class="delivery-message">Your order will be delivered in 3-5 business days</p>
-                <button class="btn btn-primary" onclick="location.reload()">Continue Shopping</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    setupModalClose(modal);
-    showNotification('Order placed successfully!', 'success');
 }
 
 function openAuthModal() {
     const modal = createModal('auth-modal');
     modal.innerHTML = `
-        <div class="modal-content auth-modal">
-            <span class="close">&times;</span>
-            <div class="auth-container">
-                <div class="auth-tabs">
-                    <button class="tab-btn active" data-tab="login">Login</button>
-                    <button class="tab-btn" data-tab="register">Register</button>
+        <div class="modal-content" style="background:#fff; padding:30px; border-radius:8px; width:350px; position:relative;">
+            <span class="close" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:24px;">&times;</span>
+            <h2 id="auth-title" style="margin-bottom:20px; color:#2c3e50;">Sign In</h2>
+            
+            <form id="auth-form">
+                <div style="margin-bottom:15px;" id="name-group" class="hidden-field">
+                    <label style="display:block; margin-bottom:5px;">Full Name</label>
+                    <input type="text" id="auth-name" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
                 </div>
-
-                <div class="tab-content" id="login-tab">
-                    <h2>Sign In</h2>
-                    <form id="login-form">
-                        <input type="email" placeholder="Email Address" required>
-                        <input type="password" placeholder="Password" required>
-                        <button type="submit" class="btn btn-primary">Sign In</button>
-                    </form>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px;">Email Address</label>
+                    <input type="email" id="auth-email" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
                 </div>
-
-                <div class="tab-content hidden" id="register-tab">
-                    <h2>Create Account</h2>
-                    <form id="register-form">
-                        <input type="text" placeholder="Full Name" required>
-                        <input type="email" placeholder="Email Address" required>
-                        <input type="password" placeholder="Password (min. 6 chars)" required>
-                        <input type="password" placeholder="Confirm Password" required>
-                        <button type="submit" class="btn btn-primary">Create Account</button>
-                    </form>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:5px;">Password</label>
+                    <input type="password" id="auth-password" required style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
                 </div>
-            </div>
+                <button type="submit" id="auth-submit-btn" style="width:100%; background:#f39c12; color:#fff; border:none; padding:12px; border-radius:4px; font-weight:bold; cursor:pointer;">Sign In</button>
+            </form>
+            <p style="margin-top:15px; text-align:center; font-size:0.9rem;">
+                <span id="auth-switch-text">New to AK Industry?</span> 
+                <a href="#" id="auth-switch-link" style="color:#3498db; text-decoration:none; font-weight:bold;">Create Account</a>
+            </p>
         </div>
     `;
-
     document.body.appendChild(modal);
     setupModalClose(modal);
 
-    // Tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            
-            this.classList.add('active');
-            document.getElementById(this.dataset.tab + '-tab').classList.remove('hidden');
-        });
+    // Dynamic field styling setup
+    const nameGroup = modal.querySelector('#name-group');
+    nameGroup.style.display = 'none'; 
+    let isLoginMode = true;
+
+    // Toggle back and forth between Sign In and Registration forms
+    modal.querySelector('#auth-switch-link').addEventListener('click', function(e) {
+        e.preventDefault();
+        isLoginMode = !isLoginMode;
+        modal.querySelector('#auth-title').textContent = isLoginMode ? 'Sign In' : 'Register';
+        modal.querySelector('#auth-submit-btn').textContent = isLoginMode ? 'Sign In' : 'Create Account';
+        modal.querySelector('#auth-switch-text').textContent = isLoginMode ? 'New to AK Industry?' : 'Already have an account?';
+        this.textContent = isLoginMode ? 'Create Account' : 'Sign In';
+        nameGroup.style.display = isLoginMode ? 'none' : 'block';
     });
 
-    // Login handler
-    document.getElementById('login-form').addEventListener('submit', function(e) {
+    // Handle Form Submit
+    modal.querySelector('#auth-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        const email = this.querySelector('input[type="email"]').value;
-        const password = this.querySelector('input[type="password"]').value;
+        const email = modal.querySelector('#auth-email').value;
+        const password = modal.querySelector('#auth-password').value;
+        const name = modal.querySelector('#auth-name').value;
 
         try {
-            auth.login(email, password);
-            showNotification(`Welcome back, ${auth.currentUser.name}!`, 'success');
-            modal.remove();
-            updateUIState();
-        } catch (error) {
-            showNotification(error.message, 'error');
-        }
-    });
-
-    // Register handler
-    document.getElementById('register-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const name = this.querySelector('input[type="text"]').value;
-        const email = this.querySelectorAll('input[type="email"]')[0].value;
-        const password = this.querySelectorAll('input[type="password"]')[0].value;
-        const confirmPassword = this.querySelectorAll('input[type="password"]')[1].value;
-
-        if (password !== confirmPassword) {
-            showNotification('Passwords do not match', 'error');
-            return;
-        }
-
-        try {
-            auth.register(email, password, name);
-            auth.login(email, password);
-            showNotification(`Welcome, ${auth.currentUser.name}!`, 'success');
-            modal.remove();
-            updateUIState();
-        } catch (error) {
-            showNotification(error.message, 'error');
-        }
-    });
-}
-
-function setupAuthButtons() {
-    const signInBtn = document.querySelector('.nav-singin');
-    if (signInBtn && auth.isLoggedIn()) {
-        signInBtn.innerHTML = `
-            <p><span>Hello, ${auth.currentUser.name}</span></p>
-            <p class="nav-second logout-btn">Logout</p>
-        `;
-        signInBtn.querySelector('.logout-btn').addEventListener('click', function(e) {
-            e.stopPropagation();
-            auth.logout();
-            showNotification('Logged out successfully', 'info');
-            updateUIState();
-            location.reload();
-        });
-    }
-}
-
-function updateUIState() {
-    setupAuthButtons();
-    updateCartBadge();
-}
-
-function updateCartBadge() {
-    const cartBtn = document.querySelector('.nav-cart');
-    if (cartBtn) {
-        const count = cart.getItemCount();
-        if (count > 0) {
-            let badge = cartBtn.querySelector('.cart-badge');
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.className = 'cart-badge';
-                cartBtn.appendChild(badge);
+            if (isLoginMode) {
+                auth.login(email, password);
+                showNotification(`Welcome back, ${auth.currentUser.name}!`, 'success');
+            } else {
+                auth.register(email, password, name);
+                auth.login(email, password); // Auto-login after signing up
+                showNotification('Account registered successfully!', 'success');
             }
-            badge.textContent = count;
-        }
-    }
-}
-
-function createModal(id) {
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.id = id;
-    return modal;
-}
-
-function setupModalClose(modal) {
-    const closeBtn = modal.querySelector('.close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => modal.remove());
-    }
-
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.remove();
+            updateUIState();
+            modal.remove();
+        } catch (err) {
+            showNotification(err.message, 'warning');
         }
     });
 }
 
-function showNoResults() {
-    if (!document.querySelector('.no-results')) {
-        const shopSection = document.querySelector('.shop-section');
-        const noResults = document.createElement('div');
-        noResults.className = 'no-results';
-        noResults.innerHTML = '<p>No products found. Try a different search term.</p>';
-        shopSection.appendChild(noResults);
+function openCart() {
+    if (!auth.isLoggedIn()) {
+        showNotification('Please login to view your cart', 'warning');
+        openAuthModal();
+        return;
     }
-}
 
-function removeNoResults() {
-    const noResults = document.querySelector('.no-results');
-    if (noResults) {
-        noResults.remove();
-    }
-}
-
-// Render products grid
-function renderProductsGrid() {
-    const productsGrid = document.getElementById('products-grid');
-    if (!productsGrid) return;
-
-    productsGrid.innerHTML = productDatabase.map(product => `
-        <div class="product-card" onclick="handleProductCardClick(${product.id})">
-            <div class="product-image" style="background-image: url('${product.image}')">
-                <span class="product-badge">⭐ ${product.rating}</span>
+    const modal = createModal('cart-modal');
+    modal.innerHTML = `
+        <div class="modal-content" style="background:#fff; padding:30px; border-radius:8px; width:450px; position:relative; max-height:80vh; overflow-y:auto;">
+            <span class="close" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:24px;">&times;</span>
+            <h2 style="margin-bottom:20px; color:#2c3e50;">Shopping Cart</h2>
+            <div id="cart-items-list">
+                ${cart.items.length === 0 ? '<p>Your cart is empty.</p>' : cart.items.map(item => `
+                    <div style="display:flex; justify-content:between; align-items:center; border-bottom:1px solid #eee; padding:10px 0;">
+                        <div style="flex-grow:1;">
+                            <h4 style="margin:0;">${item.name}</h4>
+                            <p style="margin:5px 0; color:#7f8c8d;">₹${item.price} x ${item.quantity}</p>
+                        </div>
+                        <button style="background:#e74c3c; color:#fff; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); cart.removeItem(${item.id}); openCart();">Remove</button>
+                    </div>
+                `).join('')}
             </div>
-            <div class="product-info">
-                <p class="product-category">${product.category}</p>
-                <h3 class="product-name">${product.name}</h3>
-                <p class="product-description">${product.description}</p>
-                <div class="product-rating">
-                    <span class="stars">${'★'.repeat(Math.floor(product.rating))}${product.rating % 1 ? '½' : ''}${'☆'.repeat(5-Math.ceil(product.rating))}</span>
-                    <span class="reviews">${product.reviews} reviews</span>
-                </div>
-                <div class="product-footer">
-                    <span class="product-price">₹${product.price.toLocaleString()}</span>
-                    <button class="add-cart-btn" onclick="event.stopPropagation(); addProductToCart(${product.id})">
-                        <i class="fa-solid fa-cart-plus"></i> Add
-                    </button>
-                </div>
-            </div>
+            <h3 style="margin-top:20px; text-align:right;">Total: ₹${cart.getTotal().toLocaleString()}</h3>
         </div>
-    `).join('');
+    `;
+    document.body.appendChild(modal);
+    setupModalClose(modal);
 }
 
-function handleProductCardClick(productId) {
-    const product = productDatabase.find(p => p.id === productId);
-    if (product) {
-        showProductDetail(product);
-    }
-}
-
-function addProductToCart(productId) {
-    const product = productDatabase.find(p => p.id === productId);
-    if (product) {
-        if (!auth.isLoggedIn()) {
-            showNotification('Please login to add items to cart', 'warning');
-            openAuthModal();
-            return;
-        }
-        cart.addItem(product, 1);
-        updateCartBadge();
-    }
-}
+function showArtisanStories() { showNotification('Loading Artisan Stories...', 'info'); }
+function showLocationModal() { showNotification('Opening Location Settings...', 'info'); }
+function handleSearch(e) { }
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }

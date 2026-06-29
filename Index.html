@@ -8,9 +8,7 @@
     <meta name="description" content="Discover unique handmade products crafted by artisans. Premium quality, authentic, and ethically made.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="Style-premium.css" />
-    <!-- Stripe Script -->
     <script src="https://js.stripe.com/v3/"></script>
-    <!-- Razorpay Script -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   </head>
   <body>
@@ -52,7 +50,7 @@
           </div>
         </div>
 
-        <div class="nav-singin border">
+        <div class="nav-singin border" id="navSignIn" style="cursor: pointer;">
           <p><span>Hello, sign in</span></p>
           <p class="nav-second">Accounts & Lists</p>
         </div>
@@ -199,15 +197,13 @@
       </div>
     </div>
 
-    <!-- Products Section -->
     <div class="products-container">
       <div class="products-header">
         <h2>Featured Handmade Products</h2>
         <p>Curated collection from talented artisans</p>
       </div>
       <div class="products-grid" id="products-grid">
-        <!-- Products will be loaded here by JavaScript -->
-      </div>
+        </div>
     </div>
 
     <footer>
@@ -266,7 +262,9 @@
       </div>
     </footer>
 
+    <script src="script.js"></script>
     <script src="app.js"></script>
+    <script src="admin.js"></script>
     <script src="payments.js"></script>
   </body>
 </html>
