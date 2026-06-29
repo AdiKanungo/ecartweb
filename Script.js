@@ -29,14 +29,14 @@ if (searchInput) {
         boxes.forEach(box => {
             const title = box.querySelector('h2').textContent.toLowerCase();
             if (title.includes(searchTerm) || searchTerm === '') {
-                box.style.display = 'flex';
+                box.style.display = 'flex'; // Or 'block' depending on your layout
                 resultCount++;
             } else {
                 box.style.display = 'none';
             }
         });
 
-        // Show message if no results
+        // Show message if no results, otherwise remove it
         if (searchTerm && resultCount === 0) {
             showNoResults();
         } else {
@@ -45,17 +45,17 @@ if (searchInput) {
     });
 }
 
-// Show "No Results" message
+// Corrected: Safely appends the message instead of wiping out shopSection
 function showNoResults() {
-    if (!document.querySelector('.no-results')) {
+    if (!document.querySelector('.no-results') && shopSection) {
         const noResultsDiv = document.createElement('div');
         noResultsDiv.className = 'no-results';
         noResultsDiv.textContent = 'No products found. Try a different search term.';
-        shopSection.innerHTML = noResultsDiv.outerHTML;
+        shopSection.appendChild(noResultsDiv);
     }
 }
 
-// Remove "No Results" message
+// Corrected: Safely removes the message
 function removeNoResults() {
     const noResults = document.querySelector('.no-results');
     if (noResults) {
@@ -98,10 +98,11 @@ if (signInBtn) {
 // Box hover effects and click handlers
 document.querySelectorAll('.box').forEach(box => {
     box.style.cursor = 'pointer';
+    box.style.transition = 'all 0.3s ease'; // Set transition once instead of on hover
+    
     box.addEventListener('mouseenter', function() {
         this.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
         this.style.transform = 'translateY(-5px)';
-        this.style.transition = 'all 0.3s ease';
     });
     
     box.addEventListener('mouseleave', function() {
